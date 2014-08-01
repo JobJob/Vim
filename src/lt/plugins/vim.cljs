@@ -4,7 +4,9 @@
             [lt.util.load :as load]
             [lt.objs.editor.pool :as pool]
             [lt.objs.sidebar.command :as scmd]
+            [lt.objs.statusbar :as statusbar]
             [lt.objs.command :as cmd :refer [command]]
+            [crate.binding :refer [bound map-bound]]
             [lt.objs.editor :as editor])
   (:require-macros [lt.macros :refer [behavior]]))
 
@@ -33,11 +35,30 @@
   (editor/off ed "vim-mode-change" (mode-change-listener ed))
   (object/raise ed :mode-change "normal-editor"))
 
+
+(defn ->vimmode-str [{:keys [vimmode]}]
+  [:span.vimmode (str vimmode "\t")])
+
+;;define vimmode status bar
+(object/object* ::statusbar.vimmode
+                :triggers #{}
+                :behaviors #{}
+                :vimmode "Normal Mode"
+                :init (fn [this]
+                        (statusbar/statusbar-item (bound this ->vimmode-str) "")))
+
+;;create vimmode status bar
+(def statusbar-vimmode (object/create ::statusbar.vimmode))
+
+;;add it to the ui
+(statusbar/add-statusbar-item statusbar-vimmode)
+
 (behavior ::mode-change
           :triggers #{:mode-change}
           :reaction (fn [this mode]
                       (object/remove-tags this (:all mode-tags))
-                      (object/add-tags this (mode-tags (keyword mode)))))
+                      (object/add-tags this (mode-tags (keyword mode)))
+                      (object/merge! statusbar-vimmode {:vimmode mode})))
 
 (behavior ::find-bar-inactive
           :triggers #{:inactive}
