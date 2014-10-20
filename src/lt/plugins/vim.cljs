@@ -7,7 +7,8 @@
             [lt.objs.statusbar :as statusbar]
             [lt.objs.command :as cmd :refer [command]]
             [crate.binding :refer [bound map-bound]]
-            [lt.objs.editor :as editor])
+            [lt.objs.editor :as editor]
+            [lt.objs.notifos :as notifos])
   (:require-macros [lt.macros :refer [behavior]]))
 
 (def mode-tags {:all #{:editor.keys.vim.insert :editor.keys.normal
@@ -78,7 +79,7 @@
                       (doseq [[k v] ks]
                         (js/CodeMirror.Vim.map k v "normal"))))
 
-(behavior ::set-vim-option
+(behavior ::set-options
           :triggers #{:object.instant}
           :desc "Vim: Set codemirror vim options"
           :params [{:label "vim options"
@@ -109,6 +110,8 @@
                       (when-not (object/has-tag? this :editor.keys.vim)
                         (make-vim-editor this))))
 
+;; Ex commands
+;; ===========
 (command {:command :vim-save
           :desc "Vim: :w"
           :exec (fn []
@@ -140,6 +143,18 @@
           :exec (fn []
                   (cmd/exec! :find.clear))})
 
+(command  {:command :vim-tab-next
+           :desc "Vim: :tabn"
+           :exec (fn []
+                   (cmd/exec! :tabs.next))})
+
+(command  {:command :vim-tab-previous
+           :desc "Vim: :tabp"
+           :exec (fn []
+                   (cmd/exec! :tabs.prev))})
+
+;; Other commands
+;; ==============
 (command {:command :vim.find
           :desc "Vim: find"
           :hidden true
@@ -164,3 +179,11 @@
                      (apply cmd/exec! (-> (.-args info)
                                           (first)
                                           (keyword)) (next (.-args info))))})
+
+;; TODO: Add support for interactive prompt
+;; Move to main LT repo once this is done
+(js/CodeMirror.defineExtension
+ "openDialog"
+ (fn [template callback options]
+   (notifos/msg* template)
+   (fn [] (notifos/msg* ""))))
